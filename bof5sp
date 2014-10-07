@@ -1,0 +1,89 @@
+#!/bin/bash -e
+
+### BEGIN INIT INFO
+# Provides:          bof5
+# Required-Start:    $remote_fs
+# Required-Stop:     $remote_fs
+# Should-Start:      $network
+# Should-Stop:       $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start and stop bof5 scripts
+# Description:       Script system for BOF5 server created with love by ORIDIS
+### END INIT INFO
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+# Author: Andrey Izhakovskiy <stels@epage.ru>
+
+# PATH should only include /usr/* if it runs after the mountnfs.sh script
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="BOF5 SP Service"
+NAME="bof5sp"
+PIDDIR=/var/run/
+SCRIPTNAME=/etc/init.d/$NAME
+
+SPDIR=/dir/
+SPSCRIPT=save_delayed.php
+PHPARGS="-d display_errors=1"
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+getCommand()
+{
+    for i in "$@"
+    do
+        c=${i}
+    done
+
+    case "$c" in
+        start)
+            c=$c
+        ;;
+        stop)
+            c="stop"
+        ;;
+        *)
+            c="default"
+        ;;
+    esac
+}
+
+getHelp()
+{
+    echo "Use service $NAME start/stop"
+    exit 0;
+}
+
+if [ "$#" = "0" ]
+    then
+        getHelp;
+    fi
+
+getCommand $@;
+
+PID=`ps -aux | grep SCREEN | grep $NAME | awk '{print $2}'`
+
+case "$c" in
+    start)   
+        if [ X$PID != X ]
+            then
+                kill -9 $PID
+            fi
+
+        COMMAND="cd $SPDIR; php $PHPARGS $SPSCRIPT | tee /var/log/bof5/$NAME.log"
+        screen -dmS $NAME bash -c "$COMMAND"
+    ;;
+    stop)
+        if [ X$PID != X ]
+            then
+                screen -S $NAME -X quit
+            fi
+    ;;
+    *)
+        getHelp;
+    ;;
+esac
+
+exit 0
